@@ -1,0 +1,3444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Stream Recommender</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117;
+            color: #e6edf3;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: linear-gradient(90deg, #1a202c, #2d3748);
+            padding: 1.5rem 0;
+            border-bottom: 2px solid #4a5568;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: #63b3ed;
+            text-shadow: 0 0 15px rgba(99, 179, 237, 0.7);
+            letter-spacing: 0.05em;
+        }
+
+        .section-card {
+            background-color: #161b22;
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #2d3748;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+        }
+
+        .section-card h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #a78bfa;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
+        }
+
+        .custom-checkbox-group label {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.75rem 1.25rem;
+            border-radius: 9999px;
+            background-color: #2d3748;
+            border: 1px solid #4a5568;
+            color: #e6edf3;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            margin: 0.5rem;
+            user-select: none;
+        }
+
+        .custom-checkbox-group input[type="checkbox"],
+        .custom-checkbox-group input[type="radio"] {
+            display: none;
+        }
+
+        .custom-checkbox-group label::before {
+            content: '';
+            display: inline-block;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 0.375rem;
+            border: 2px solid #63b3ed;
+            margin-right: 0.75rem;
+            background-color: #1a202c;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .custom-checkbox-group input[type="checkbox"]:checked + label {
+            background-color: #63b3ed;
+            border-color: #63b3ed;
+            color: #1a202c;
+            box-shadow: 0 0 15px rgba(99, 179, 237, 0.7);
+            transform: scale(1.05);
+        }
+
+        .custom-checkbox-group input[type="checkbox"]:checked + label::before {
+            background-color: #1a202c;
+            border-color: #1a202c;
+            box-shadow: inset 0 0 0 4px #e6edf3;
+        }
+
+        .custom-checkbox-group input[type="radio"]:checked + label {
+            background-color: #a78bfa;
+            border-color: #a78bfa;
+            color: #1a202c;
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.7);
+            transform: scale(1.05);
+        }
+
+        .custom-checkbox-group input[type="radio"]:checked + label::before {
+            background-color: #1a202c;
+            border-color: #1a202c;
+            border-radius: 50%;
+            box-shadow: inset 0 0 0 4px #e6edf3;
+        }
+
+        .nav-buttons button {
+            background: linear-gradient(45deg, #63b3ed, #a78bfa);
+            color: #1a202c;
+            font-weight: 700;
+            padding: 0.8rem 2rem;
+            border-radius: 9999px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .nav-buttons button:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+            opacity: 0.9;
+        }
+
+        .nav-buttons button:disabled {
+            background: #4a5568;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #recommendation-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            padding-top: 2rem;
+        }
+
+        .recommendation-card {
+            background-color: #1a202c;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid #4a5568;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .recommendation-card:hover {
+            transform: translateY(-8px) scale(1.01);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(99, 179, 237, 0.5);
+        }
+
+        .recommendation-card img {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            border-bottom: 1px solid #4a5568;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-content h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-content h3.movie-title {
+            color: #63b3ed;
+            text-shadow: 0 0 8px rgba(99, 179, 237, 0.6);
+        }
+        .card-content h3.tv-show-title {
+            color: #a78bfa;
+            text-shadow: 0 0 8px rgba(167, 139, 250, 0.6);
+        }
+        .card-content h3.anime-title {
+            color: #f6e05e;
+            text-shadow: 0 0 8px rgba(246, 224, 94, 0.6);
+        }
+        .card-content h3.kdrama-title {
+            color: #fc8181;
+            text-shadow: 0 0 8px rgba(252, 129, 129, 0.6);
+        }
+
+        .card-content .type-genre {
+            font-size: 0.9rem;
+            color: #a0aec0;
+            margin-bottom: 0.5rem;
+        }
+
+        .rating-info {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .rating-info span {
+            font-weight: 600;
+            color: #e6edf3;
+            background-color: #2d3748;
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .rating-info .imdb {
+            color: #f6e05e;
+        }
+
+        .rating-info .rt {
+            color: #fc8181;
+        }
+
+        .card-content p {
+            font-size: 1rem;
+            color: #cbd5e0;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: auto;
+            justify-content: center;
+        }
+
+        .card-actions button {
+            background: linear-gradient(45deg, #a78bfa, #63b3ed);
+            color: #1a202c;
+            font-weight: 600;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.75rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            opacity: 0.95;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: #161b22;
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+            border: 1px solid #4a5568;
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-content h3 {
+            font-size: 2rem;
+            color: #63b3ed;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .modal-content .platform-list a {
+            display: flex;
+            align-items: center;
+            background-color: #2d3748;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            margin-bottom: 0.75rem;
+            color: #e6edf3;
+            text-decoration: none;
+            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+            border: 1px solid #4a5568;
+        }
+
+        .modal-content .platform-list a svg {
+            margin-right: 1rem;
+            width: 1.5rem;
+            height: 1.5rem;
+            color: #a78bfa;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #e6edf3;
+            cursor: pointer;
+            transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        .modal-close-btn:hover {
+            color: #fc8181;
+            transform: rotate(90deg);
+        }
+
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.5rem;
+            color: #a78bfa;
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        .loading-indicator.active {
+            display: block;
+        }
+
+        @keyframes pulse {
+            from {
+                opacity: 0.6;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        #no-results-message {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+            color: #fc8181;
+        }
+
+        #no-results-message.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+            .container {
+                padding: 1rem;
+            }
+            .section-card {
+                padding: 1.5rem;
+            }
+            .section-card h2 {
+                font-size: 1.5rem;
+            }
+            .custom-checkbox-group label {
+                padding: 0.6rem 1rem;
+                margin: 0.3rem;
+                font-size: 0.9rem;
+            }
+            .custom-checkbox-group label::before {
+                width: 1rem;
+                height: 1rem;
+                margin-right: 0.5rem;
+            }
+            .nav-buttons button {
+                padding: 0.7rem 1.5rem;
+                font-size: 0.9rem;
+            }
+            .recommendation-card img {
+                height: 250px;
+            }
+            .card-content h3 {
+                font-size: 1.4rem;
+            }
+            .card-content p {
+                font-size: 0.9rem;
+            }
+            .modal-content {
+                padding: 1.5rem;
+            }
+            .modal-content h3 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <header>
+        <div class="container">
+            <h1>Quantum Stream Recommender</h1>
+            <p class="text-gray-400 text-lg mt-2">Discover your next obsession in the digital universe.</p>
+        </div>
+    </header>
+
+    <main class="container py-8">
+        <section id="questionnaire-section" class="section-card">
+            <div id="question-step-1" class="question-step">
+                <h2>What's your current mood?</h2>
+                <div class="flex flex-wrap justify-center custom-checkbox-group">
+                    <input type="checkbox" id="mood-exciting" name="mood" value="Exciting"><label for="mood-exciting">Exciting</label>
+                    <input type="checkbox" id="mood-relaxing" name="mood" value="Relaxing"><label for="mood-relaxing">Relaxing</label>
+                    <input type="checkbox" id="mood-thought-provoking" name="mood" value="Thought-Provoking"><label for="mood-thought-provoking">Thought-Provoking</label>
+                    <input type="checkbox" id="mood-funny" name="mood" value="Funny"><label for="mood-funny">Funny</label>
+                    <input type="checkbox" id="checkbox-suspenseful" name="mood" value="Suspenseful"><label for="checkbox-suspenseful">Suspenseful</label>
+                    <input type="checkbox" id="checkbox-romantic" name="mood" value="Romantic"><label for="checkbox-romantic">Romantic</label>
+                    <input type="checkbox" id="checkbox-adventurous" name="mood" value="Adventurous"><label for="checkbox-adventurous">Adventurous</label>
+                    <input type="checkbox" id="checkbox-dramatic" name="mood" value="Dramatic"><label for="checkbox-dramatic">Dramatic</label>
+                    <input type="checkbox" id="checkbox-inspiring" name="mood" value="Inspiring"><label for="checkbox-inspiring">Inspiring</label>
+                    <input type="checkbox" id="checkbox-mysterious" name="mood" value="Mysterious"><label for="checkbox-mysterious">Mysterious</label>
+                    <input type="checkbox" id="checkbox-gritty" name="mood" value="Gritty"><label for="checkbox-gritty">Gritty</label>
+                    <input type="checkbox" id="checkbox-whimsical" name="mood" value="Whimsical"><label for="checkbox-whimsical">Whimsical</label>
+                    <input type="checkbox" id="checkbox-calming" name="mood" value="Calming"><label for="checkbox-calming">Calming</label>
+                    <input type="checkbox" id="checkbox-intense" name="mood" value="Intense"><label for="checkbox-intense">Intense</label>
+                </div>
+                <div class="nav-buttons flex justify-center mt-8 gap-4">
+                    <button id="next-step-1">Next</button>
+                </div>
+            </div>
+
+            <div id="question-step-2" class="question-step hidden">
+                <h2>What type of entertainment are you craving?</h2>
+                <div class="flex flex-wrap justify-center custom-checkbox-group">
+                    <input type="checkbox" id="type-movie" name="type" value="Movie"><label for="type-movie">Movie</label>
+                    <input type="checkbox" id="type-tv-show" name="type" value="TV Show"><label for="type-tv-show">TV Show</label>
+                    <input type="checkbox" id="type-anime" name="type" value="Anime"><label for="type-anime">Anime</label>
+                    <input type="checkbox" id="type-kdrama" name="type" value="K-Drama"><label for="type-kdrama">K-Drama</label>
+                </div>
+                <div class="nav-buttons flex justify-center mt-8 gap-4">
+                    <button id="prev-step-2">Previous</button>
+                    <button id="next-step-2">Next</button>
+                </div>
+            </div>
+
+            <div id="question-step-3" class="question-step hidden">
+                <h2>Any specific genres?</h2>
+                <div class="flex flex-wrap justify-center custom-checkbox-group">
+                    <input type="checkbox" id="genre-action" name="genre" value="Action"><label for="genre-action">Action</label>
+                    <input type="checkbox" id="genre-adventure" name="genre" value="Adventure"><label for="genre-adventure">Adventure</label>
+                    <input type="checkbox" id="genre-comedy" name="genre" value="Comedy"><label for="genre-comedy">Comedy</label>
+                    <input type="checkbox" id="genre-drama" name="genre" value="Drama"><label for="genre-drama">Drama</label>
+                    <input type="checkbox" id="genre-fantasy" name="genre" value="Fantasy"><label for="genre-fantasy">Fantasy</label>
+                    <input type="checkbox" id="genre-horror" name="genre" value="Horror"><label for="genre-horror">Horror</label>
+                    <input type="checkbox" id="genre-mystery" name="genre" value="Mystery"><label for="genre-mystery">Mystery</label>
+                    <input type="checkbox" id="genre-romance" name="genre" value="Romance"><label for="genre-romance">Romance</label>
+                    <input type="checkbox" id="genre-sci-fi" name="genre" value="Sci-Fi"><label for="genre-sci-fi">Sci-Fi</label>
+                    <input type="checkbox" id="genre-thriller" name="genre" value="Thriller"><label for="genre-thriller">Thriller</label>
+                    <input type="checkbox" id="genre-animation" name="genre" value="Animation"><label for="genre-animation">Animation</label>
+                    <input type="checkbox" id="genre-documentary" name="genre" value="Documentary"><label for="genre-documentary">Documentary</label>
+                    <input type="checkbox" id="genre-family" name="genre" value="Family"><label for="genre-family">Family</label>
+                    <input type="checkbox" id="genre-crime" name="genre" value="Crime"><label for="genre-crime">Crime</label>
+                    <input type="checkbox" id="genre-historical" name="genre" value="Historical"><label for="genre-historical">Historical</label>
+                    <input type="checkbox" id="genre-sport" name="genre" value="Sport"><label for="genre-sport">Sport</label>
+                    <input type="checkbox" id="genre-music" name="genre" value="Music"><label for="genre-music">Music</label>
+                    <input type="checkbox" id="genre-psychological" name="genre" value="Psychological"><label for="genre-psychological">Psychological</label>
+                    <input type="checkbox" id="genre-supernatural" name="mood" value="Supernatural"><label for="genre-supernatural">Supernatural</label>
+                    <input type="checkbox" id="genre-business" name="genre" value="Business"><label for="genre-business">Business</label>
+                    <input type="checkbox" id="genre-medical" name="genre" value="Medical"><label for="genre-medical">Medical</label>
+                    <input type="checkbox" id="genre-philosophy" name="genre" value="Philosophy"><label for="genre-philosophy">Philosophy</label>
+                    <input type="checkbox" id="genre-slice-of-life" name="genre" value="Slice of Life"><label for="genre-slice-of-life">Slice of Life</label>
+                    <input type="checkbox" id="genre-survival" name="genre" value="Survival"><label for="genre-survival">Survival</label>
+                </div>
+                <div class="nav-buttons flex justify-center mt-8 gap-4">
+                    <button id="prev-step-3">Previous</button>
+                    <button id="next-step-3">Next</button>
+                </div>
+            </div>
+
+            <div id="question-step-4" class="question-step hidden">
+                <h2>How much time do you have?</h2>
+                <div class="flex flex-wrap justify-center custom-checkbox-group">
+                    <input type="radio" id="duration-short" name="duration" value="Short"><label for="duration-short">Short (Under 2 hours)</label>
+                    <input type="radio" id="duration-medium" name="duration" value="Medium"><label for="duration-medium">Medium (2-5 hours)</label>
+                    <input type="radio" id="duration-long" name="duration" value="Long"><label for="duration-long">Long (5+ hours)</label>
+                </div>
+                <div class="nav-buttons flex justify-center mt-8 gap-4">
+                    <button id="prev-step-4">Previous</button>
+                    <button id="generate-recommendations">Generate Recommendations</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="recommendation-section" class="section-card hidden">
+            <h2 class="mb-4">Your Personalized Streams:</h2>
+            <div class="nav-buttons flex justify-center mb-8 gap-4">
+                <button id="clear-filters">Clear Filters & Restart</button>
+            </div>
+            <div id="recommendation-results">
+            </div>
+            <div id="loading-indicator" class="loading-indicator">
+                Generating your quantum streams...
+            </div>
+            <div id="no-results-message" class="no-results-message">
+                No streams found matching your criteria. Try broadening your selections!
+            </div>
+        </section>
+    </main>
+
+    <div id="info-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <h3 id="modal-title"></h3>
+            <div id="modal-body">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const entertainmentData = [
+            {
+                "id": 1,
+                "title": "Inception",
+                "type": "Movie",
+                "genres": [
+                    "Sci-Fi",
+                    "Action",
+                    "Thriller"
+                ],
+                "moods": [
+                    "Thought-Provoking",
+                    "Exciting",
+                    "Suspenseful"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 28m",
+                "description": "A thief who steals information by entering people's dreams is given the inverse task of planting an idea into a target's subconscious.",
+                "imdbRating": 8.8,
+                "rottenTomatoesScore": 87,
+                "releaseYear": 2010,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/70131314"
+                    },
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/movies/inception/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/YoHD9XEInc0"
+            },
+            {
+                "id": 2,
+                "title": "Stranger Things",
+                "type": "TV Show",
+                "genres": [
+                    "Sci-Fi",
+                    "Horror",
+                    "Mystery"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Suspenseful",
+                    "Mysterious"
+                ],
+                "durationCategory": "Long",
+                "seasons": 4,
+                "description": "When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and one strange little girl.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 92,
+                "releaseYear": 2016,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80057281"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/b9EkMc79ZSU"
+            },
+            {
+                "id": 3,
+                "title": "Attack on Titan",
+                "type": "Anime",
+                "genres": [
+                    "Action",
+                    "Fantasy",
+                    "Drama"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Dramatic",
+                    "Suspenseful"
+                ],
+                "durationCategory": "Long",
+                "seasons": 4,
+                "description": "Humanity fights for survival against giant humanoid Titans.",
+                "imdbRating": 9.0,
+                "rottenTomatoesScore": 96,
+                "releaseYear": 2013,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/GRWVDG07R/attack-on-titan"
+                    },
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/series/attack-on-titan-82390a42-706d-4e94-a0c9-207079a6673b"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/MUCN-JwUvbY"
+            },
+            {
+                "id": 4,
+                "title": "Squid Game",
+                "type": "K-Drama",
+                "genres": [
+                    "Thriller",
+                    "Drama",
+                    "Survival"
+                ],
+                "moods": [
+                    "Intense",
+                    "Suspenseful",
+                    "Gritty"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 1,
+                "description": "Hundreds of cash-strapped players accept an invitation to compete in children's games for a tempting prize...",
+                "imdbRating": 8.0,
+                "rottenTomatoesScore": 94,
+                "releaseYear": 2021,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81040344"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/oqxAJKy0ii4"
+            },
+            {
+                "id": 5,
+                "title": "Parasite",
+                "type": "Movie",
+                "genres": [
+                    "Thriller",
+                    "Drama",
+                    "Comedy"
+                ],
+                "moods": [
+                    "Suspenseful",
+                    "Thought-Provoking",
+                    "Dramatic"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 12m",
+                "description": "A poor family schemes to become employed by a wealthy family, infiltrating their lives.",
+                "imdbRating": 8.5,
+                "rottenTomatoesScore": 98,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/movie/parasite-62d26f68-7132-475a-a38f-a95781a7d65b"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/isOGD_7hNIY"
+            },
+            {
+                "id": 6,
+                "title": "Breaking Bad",
+                "type": "TV Show",
+                "genres": [
+                    "Crime",
+                    "Drama",
+                    "Thriller"
+                ],
+                "moods": [
+                    "Suspenseful",
+                    "Dramatic",
+                    "Gritty"
+                ],
+                "durationCategory": "Long",
+                "seasons": 5,
+                "description": "A high school chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine to secure his family's future.",
+                "imdbRating": 9.5,
+                "rottenTomatoesScore": 96,
+                "releaseYear": 2008,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/70143836"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/HhesaQXLuRY"
+            },
+            {
+                "id": 7,
+                "title": "Spirited Away",
+                "type": "Anime",
+                "genres": [
+                    "Fantasy",
+                    "Adventure",
+                    "Family"
+                ],
+                "moods": [
+                    "Whimsical",
+                    "Mysterious",
+                    "Calming"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 5m",
+                "description": "A young girl's parents are turned into pigs, and she must work in a bathhouse for spirits to free them.",
+                "imdbRating": 8.6,
+                "rottenTomatoesScore": 97,
+                "releaseYear": 2001,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/movies/spirited-away/2585642d-222a-4c28-98f9-4d6f8f4a3d6f"
+                    },
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/60023642"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/ByXuk9QqQkk"
+            },
+            {
+                "id": 8,
+                "title": "Crash Landing on You",
+                "type": "K-Drama",
+                "genres": [
+                    "Romance",
+                    "Comedy",
+                    "Drama"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Funny",
+                    "Dramatic"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A South Korean heiress accidentally crash-lands in North Korea and falls in love with an army officer.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 93,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81159258"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/eXMjTXL2Vks"
+            },
+            {
+                "id": 9,
+                "title": "Dune",
+                "type": "Movie",
+                "genres": [
+                    "Sci-Fi",
+                    "Adventure",
+                    "Drama"
+                ],
+                "moods": [
+                    "Thought-Provoking",
+                    "Adventurous",
+                    "Dramatic"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 35m",
+                "description": "A gifted young man must travel to the most dangerous planet in the universe to ensure the future of his family and his people.",
+                "imdbRating": 8.0,
+                "rottenTomatoesScore": 83,
+                "releaseYear": 2021,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/movies/dune/210214c7-142f-410a-810a-4a6962319207"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/n9xhJrPXop4"
+            },
+            {
+                "id": 10,
+                "title": "The Mandalorian",
+                "type": "TV Show",
+                "genres": [
+                    "Sci-Fi",
+                    "Action",
+                    "Adventure"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Adventurous"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 3,
+                "description": "The travels of a lone bounty hunter in the outer reaches of the galaxy, far from the authority of the New Republic.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 93,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Disney+",
+                        "link": "https://www.disneyplus.com/series/the-mandalorian/3jQpDILu0y4m"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/aOC8E8z_ifw"
+            },
+            {
+                "id": 11,
+                "title": "Demon Slayer: Kimetsu no Yaiba",
+                "type": "Anime",
+                "genres": [
+                    "Action",
+                    "Fantasy",
+                    "Drama"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Dramatic",
+                    "Suspenseful"
+                ],
+                "durationCategory": "Long",
+                "seasons": 4,
+                "description": "A young boy whose family is slaughtered and his sister turned into a demon embarks on a quest to avenge them.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 93,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/GRWVDG07R/demon-slayer-kimetsu-no-yaiba"
+                    },
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/series/attack-on-titan-82390a42-706d-4e94-a0c9-207079a6673b"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/x7uLutVRBfI"
+            },
+            {
+                "id": 12,
+                "title": "Goblin",
+                "type": "K-Drama",
+                "genres": [
+                    "Fantasy",
+                    "Romance",
+                    "Drama"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Dramatic",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A goblin who needs a human bride to end his immortal life, and a grim reaper who has amnesia.",
+                "imdbRating": 8.6,
+                "rottenTomatoesScore": 92,
+                "releaseYear": 2016,
+                "whereToWatch": [
+                    {
+                        "platform": "Viki",
+                        "link": "https://www.viki.com/tv/32240c-goblin"
+                    },
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80174062"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/S94ukM8C17A"
+            },
+            {
+                "id": 13,
+                "title": "Interstellar",
+                "type": "Movie",
+                "genres": [
+                    "Sci-Fi",
+                    "Drama",
+                    "Adventure"
+                ],
+                "moods": [
+                    "Thought-Provoking",
+                    "Adventurous",
+                    "Dramatic"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 49m",
+                "description": "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
+                "imdbRating": 8.6,
+                "rottenTomatoesScore": 72,
+                "releaseYear": 2014,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/70305903"
+                    },
+                    {
+                        "platform": "PrimeVideo",
+                        "link": "https://www.amazon.com/Interstellar-Matthew-McConaughey/dp/B001GBJ49S"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/zSWdZVtXT7E"
+            },
+            {
+                "id": 14,
+                "title": "The Queen's Gambit",
+                "type": "TV Show",
+                "genres": [
+                    "Drama",
+                    "Sport"
+                ],
+                "moods": [
+                    "Inspiring",
+                    "Dramatic",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 1,
+                "description": "Orphaned chess prodigy Beth Harmon struggles with addiction in her quest to become the greatest chess player in the world.",
+                "imdbRating": 8.6,
+                "rottenTomatoesScore": 96,
+                "releaseYear": 2020,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80234406"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/oZn3qSgmLqI"
+            },
+            {
+                "id": 15,
+                "title": "Your Name.",
+                "type": "Anime",
+                "genres": [
+                    "Romance",
+                    "Fantasy",
+                    "Drama"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Thought-Provoking",
+                    "Dramatic"
+                ],
+                "durationCategory": "Short",
+                "runtime": "1h 46m",
+                "description": "Two strangers find themselves linked in a bizarre way. When a comet approaches, they realize their connection is more profound.",
+                "imdbRating": 8.4,
+                "rottenTomatoesScore": 98,
+                "releaseYear": 2016,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/movie-your-name"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/xU47nhruN-Q"
+            },
+            {
+                "id": 16,
+                "title": "Vincenzo",
+                "type": "K-Drama",
+                "genres": [
+                    "Crime",
+                    "Comedy",
+                    "Drama"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Funny",
+                    "Dramatic"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A Korean-Italian mafia lawyer gives a conglomerate a taste of its own medicine with a side of justice.",
+                "imdbRating": 8.4,
+                "rottenTomatoesScore": 90,
+                "releaseYear": 2021,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81365087"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/S12-4mXCNj4"
+            },
+            {
+                "id": 17,
+                "title": "Spider-Man: Into the Spider-Verse",
+                "type": "Movie",
+                "genres": [
+                    "Animation",
+                    "Action",
+                    "Adventure"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Funny",
+                    "Inspiring"
+                ],
+                "durationCategory": "Short",
+                "runtime": "1h 57m",
+                "description": "Teenager Miles Morales becomes Spider-Man and joins other Spider-People from parallel dimensions to save all realities from Kingpin.",
+                "imdbRating": 8.4,
+                "rottenTomatoesScore": 97,
+                "releaseYear": 2018,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80211855"
+                    },
+                    {
+                        "platform": "Disney+",
+                        "link": "https://www.disneyplus.com/movies/spider-man-into-the-spider-verse/502i9r88114G"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/g4Hbz2jLxvQ"
+            },
+            {
+                "id": 18,
+                "title": "Dark",
+                "type": "TV Show",
+                "genres": [
+                    "Sci-Fi",
+                    "Mystery",
+                    "Thriller"
+                ],
+                "moods": [
+                    "Thought-Provoking",
+                    "Suspenseful",
+                    "Mysterious"
+                ],
+                "durationCategory": "Long",
+                "seasons": 3,
+                "description": "A family saga with a supernatural twist, where a missing child sets four families on a frantic hunt for answers as they unearth a mind-bending mystery that spans three generations.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 95,
+                "releaseYear": 2017,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80100172"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/rrwycJ08PSA"
+            },
+            {
+                "id": 19,
+                "title": "Fullmetal Alchemist: Brotherhood",
+                "type": "Anime",
+                "genres": [
+                    "Action",
+                    "Adventure",
+                    "Fantasy"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Adventurous",
+                    "Dramatic"
+                ],
+                "durationCategory": "Long",
+                "seasons": 5,
+                "description": "Two brothers search for the Philosopher's Stone after an attempt to revive their mother goes horribly wrong.",
+                "imdbRating": 9.1,
+                "rottenTomatoesScore": 100,
+                "releaseYear": 2009,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/GY9PJ2K0Y/fullmetal-alchemist-brotherhood"
+                    },
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/series/fullmetal-alchemist-brotherhood-0a256920-562e-4b47-b76e-d232a9332174"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/RNwNA1M8A94"
+            },
+            {
+                "id": 20,
+                "title": "It's Okay to Not Be Okay",
+                "type": "K-Drama",
+                "genres": [
+                    "Romance",
+                    "Drama",
+                    "Psychological"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Dramatic",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A health worker and a children's book writer, both with emotional wounds, find healing and love.",
+                "imdbRating": 8.6,
+                "rottenTomatoesScore": 95,
+                "releaseYear": 2020,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81243992"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/50ek4HQo0Bc"
+            },
+            {
+                "id": 21,
+                "title": "Whiplash",
+                "type": "Movie",
+                "genres": [
+                    "Drama",
+                    "Music"
+                ],
+                "moods": [
+                    "Inspiring",
+                    "Dramatic",
+                    "Intense"
+                ],
+                "durationCategory": "Short",
+                "runtime": "1h 46m",
+                "description": "A promising young drummer enrolls at a cut-throat music conservatory where his dreams are mentored by an instructor who will stop at nothing to realize a student's potential.",
+                "imdbRating": 8.5,
+                "rottenTomatoesScore": 94,
+                "releaseYear": 2014,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/70305959"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/7d_jQycdQGo"
+            },
+            {
+                "id": 22,
+                "title": "The Good Place",
+                "type": "TV Show",
+                "genres": [
+                    "Comedy",
+                    "Fantasy",
+                    "Philosophy"
+                ],
+                "moods": [
+                    "Funny",
+                    "Thought-Provoking",
+                    "Relaxing"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 4,
+                "description": "A woman wakes up in the afterlife and tries to hide the fact that she's been sent to the 'Good Place' by mistake.",
+                "imdbRating": 8.2,
+                "rottenTomatoesScore": 97,
+                "releaseYear": 2016,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80113701"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/9QxRbzFk3zk"
+            },
+            {
+                "id": 23,
+                "title": "Cowboy Bebop",
+                "type": "Anime",
+                "genres": [
+                    "Sci-Fi",
+                    "Action",
+                    "Drama"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Thought-Provoking",
+                    "Relaxing"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 1,
+                "description": "The adventures of a bounty hunter crew in the year 2071, chasing criminals across the solar system.",
+                "imdbRating": 8.9,
+                "rottenTomatoesScore": 96,
+                "releaseYear": 1998,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/G6P8D8QJ6/cowboy-bebop"
+                    },
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/series/cowboy-bebop-db12c751-2e65-422c-9014-94576394334a"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/ULCIHP5dc44"
+            },
+            {
+                "id": 24,
+                "title": "Reply 1988",
+                "type": "K-Drama",
+                "genres": [
+                    "Comedy",
+                    "Drama",
+                    "Family"
+                ],
+                "moods": [
+                    "Relaxing",
+                    "Funny",
+                    "Dramatic"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "Follows the lives of five friends and their families living in the same neighborhood in 1988.",
+                "imdbRating": 9.1,
+                "rottenTomatoesScore": 95,
+                "releaseYear": 2015,
+                "whereToWatch": [
+                    {
+                        "platform": "Viki",
+                        "link": "https://www.viki.com/tv/28308c-reply-1988"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/c-EMf3JdxUA"
+            },
+            {
+                "id": 25,
+                "title": "Arrival",
+                "type": "Movie",
+                "genres": [
+                    "Sci-Fi",
+                    "Drama",
+                    "Mystery"
+                ],
+                "moods": [
+                    "Thought-Provoking",
+                    "Mysterious",
+                    "Dramatic"
+                ],
+                "durationCategory": "Short",
+                "runtime": "1h 56m",
+                "description": "A linguist is recruited by the military to communicate with alien lifeforms who have arrived on Earth.",
+                "imdbRating": 7.9,
+                "rottenTomatoesScore": 94,
+                "releaseYear": 2016,
+                "whereToWatch": [
+                    {
+                        "platform": "PrimeVideo",
+                        "link": "https://www.amazon.com/Arrival-Amy-Adams/dp/B01N26A18D"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/tFMo3UJ4B4g"
+            },
+            {
+                "id": 26,
+                "title": "The Boys",
+                "type": "TV Show",
+                "genres": [
+                    "Action",
+                    "Sci-Fi",
+                    "Comedy"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Funny",
+                    "Gritty"
+                ],
+                "durationCategory": "Long",
+                "seasons": 4,
+                "description": "A group of vigilantes known as 'The Boys' set out to take down corrupt superheroes who abuse their superpowers.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 93,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "PrimeVideo",
+                        "link": "https://www.amazon.com/The-Boys-Season-1/dp/B07QJ8QW9S"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/5SKP1_F7ReE"
+            },
+            {
+                "id": 27,
+                "title": "Jujutsu Kaisen",
+                "type": "Anime",
+                "genres": [
+                    "Action",
+                    "Supernatural",
+                    "Horror"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Suspenseful",
+                    "Gritty"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 2,
+                "description": "A high school student swallows a cursed object and becomes involved in the world of Jujutsu Sorcerers.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 97,
+                "releaseYear": 2020,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/G6P8D8QJ6/jujutsu-kaisen"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/pkKu9hLT-t8"
+            },
+            {
+                "id": 28,
+                "title": "Twenty-Five Twenty-One",
+                "type": "K-Drama",
+                "genres": [
+                    "Romance",
+                    "Drama",
+                    "Coming-of-Age"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Dramatic",
+                    "Inspiring"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "The love story of a fencer and a reporter that spans from their youth to adulthood.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 95,
+                "releaseYear": 2022,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81517168"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/gYp4cKumTwU"
+            },
+            {
+                "id": 29,
+                "title": "Eternal Sunshine of the Spotless Mind",
+                "type": "Movie",
+                "genres": [
+                    "Romance",
+                    "Sci-Fi",
+                    "Drama"
+                ],
+                "moods": [
+                    "Thought-Provoking",
+                    "Romantic",
+                    "Dramatic"
+                ],
+                "durationCategory": "Short",
+                "runtime": "1h 48m",
+                "description": "A couple undergoes a procedure to erase each other from their memories after a painful breakup.",
+                "imdbRating": 8.3,
+                "rottenTomatoesScore": 93,
+                "releaseYear": 2004,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/60034545"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/07-QBnEkgXU"
+            },
+            {
+                "id": 30,
+                "title": "Arcane",
+                "type": "TV Show",
+                "genres": [
+                    "Animation",
+                    "Action",
+                    "Fantasy"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Dramatic",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 1,
+                "description": "Amidst the escalating unrest between the rich city of Piltover and the squalid underworld of Zaun, two sisters fight on opposing sides of a war.",
+                "imdbRating": 9.0,
+                "rottenTomatoesScore": 100,
+                "releaseYear": 2021,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81435684"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/fXmAurh012s"
+            },
+            {
+                "id": 31,
+                "title": "Death Note",
+                "type": "Anime",
+                "genres": [
+                    "Mystery",
+                    "Thriller",
+                    "Supernatural"
+                ],
+                "moods": [
+                    "Suspenseful",
+                    "Thought-Provoking",
+                    "Mysterious"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 1,
+                "description": "A high school student discovers a supernatural notebook that allows him to kill anyone whose name he writes in it.",
+                "imdbRating": 9.0,
+                "rottenTomatoesScore": 100,
+                "releaseYear": 2006,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/GY9PJ2K0Y/death-note"
+                    },
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/70204970"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/NlJZ-YgAt-c"
+            },
+            {
+                "id": 32,
+                "title": "Hospital Playlist",
+                "type": "K-Drama",
+                "genres": [
+                    "Drama",
+                    "Medical",
+                    "Comedy"
+                ],
+                "moods": [
+                    "Relaxing",
+                    "Funny",
+                    "Dramatic"
+                ],
+                "durationCategory": "Long",
+                "seasons": 2,
+                "description": "Five doctors, who have been friends since medical school, navigate life and work at a hospital.",
+                "imdbRating": 8.8,
+                "rottenTomatoesScore": 94,
+                "releaseYear": 2020,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81239899"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/y5zQaeJ2GgQ"
+            },
+            {
+                "id": 33,
+                "title": "The Grand Budapest Hotel",
+                "type": "Movie",
+                "genres": [
+                    "Comedy",
+                    "Adventure",
+                    "Drama"
+                ],
+                "moods": [
+                    "Funny",
+                    "Adventurous",
+                    "Relaxing"
+                ],
+                "durationCategory": "Short",
+                "runtime": "1h 39m",
+                "description": "The adventures of Gustave H, a legendary concierge at a famous hotel from the interwar period.",
+                "imdbRating": 8.1,
+                "rottenTomatoesScore": 91,
+                "releaseYear": 2014,
+                "whereToWatch": [
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/movie/the-grand-budapest-hotel-6725227d-9226-4444-9336-3a78c182d334"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/1Fg5iWmQjwk"
+            },
+            {
+                "id": 34,
+                "title": "The Office (US)",
+                "type": "TV Show",
+                "genres": [
+                    "Comedy",
+                    "Sitcom"
+                ],
+                "moods": [
+                    "Funny",
+                    "Relaxing"
+                ],
+                "durationCategory": "Long",
+                "seasons": 9,
+                "description": "A mockumentary on the everyday lives of a group of office employees in the Scranton, Pennsylvania, branch of the fictional Dunder Mifflin Paper Company.",
+                "imdbRating": 9.0,
+                "rottenTomatoesScore": 81,
+                "releaseYear": 2005,
+                "whereToWatch": [
+                    {
+                        "platform": "Peacock",
+                        "link": "https://www.peacocktv.com/watch/the-office"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/-C2z-nshFts"
+            },
+            {
+                "id": 35,
+                "title": "My Hero Academia",
+                "type": "Anime",
+                "genres": [
+                    "Action",
+                    "Adventure",
+                    "Fantasy"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Inspiring"
+                ],
+                "durationCategory": "Long",
+                "seasons": 7,
+                "description": "A boy born without superpowers in a world where everyone has them, still dreams of becoming a superhero.",
+                "imdbRating": 8.4,
+                "rottenTomatoesScore": 93,
+                "releaseYear": 2016,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/G6P8D8QJ6/my-hero-academia"
+                    },
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/series/my-hero-academia-2a40344d-5872-45e3-8b77-50a322c6065e"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/zz37nGym3OQ"
+            },
+            {
+                "id": 36,
+                "title": "True Beauty",
+                "type": "K-Drama",
+                "genres": [
+                    "Romance",
+                    "Comedy"
+                ],
+                "moods": [
+                    "Funny",
+                    "Romantic",
+                    "Uplifting"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A high school girl who uses makeup to hide her bare face and combat insecurities finds love and self-acceptance.",
+                "imdbRating": 8.1,
+                "rottenTomatoesScore": 88,
+                "releaseYear": 2020,
+                "whereToWatch": [
+                    {
+                        "platform": "Viki",
+                        "link": "https://www.viki.com/tv/37482c-true-beauty"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/BhP1eYQ5Pxk"
+            },
+            {
+                "id": 37,
+                "title": "Blade Runner 2049",
+                "type": "Movie",
+                "genres": [
+                    "Sci-Fi",
+                    "Thriller",
+                    "Drama"
+                ],
+                "moods": [
+                    "Thought-Provoking",
+                    "Suspenseful"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 44m",
+                "description": "A young blade runner unearths a long-buried secret that has the potential to plunge what's left of society into chaos.",
+                "imdbRating": 8.0,
+                "rottenTomatoesScore": 88,
+                "releaseYear": 2017,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80182604"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/gCcx85zbxz4"
+            },
+            {
+                "id": 38,
+                "title": "Chernobyl",
+                "type": "TV Show",
+                "genres": [
+                    "Drama",
+                    "Historical",
+                    "Thriller"
+                ],
+                "moods": [
+                    "Dramatic",
+                    "Thought-Provoking",
+                    "Suspenseful"
+                ],
+                "durationCategory": "Short",
+                "seasons": 1,
+                "description": "A dramatization of the 1986 nuclear disaster and the sacrifices made to save Europe from unimaginable catastrophe.",
+                "imdbRating": 9.3,
+                "rottenTomatoesScore": 95,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/series/chernobyl/2b17a159-8664-42b7-86c5-e51c6c518b2f"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/s9APLXM9Ei8"
+            },
+            {
+                "id": 39,
+                "title": "Steins;Gate",
+                "type": "Anime",
+                "genres": [
+                    "Sci-Fi",
+                    "Thriller",
+                    "Drama"
+                ],
+                "moods": [
+                    "Thought-Provoking",
+                    "Suspenseful",
+                    "Dramatic"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 1,
+                "description": "A group of friends discovers a way to send messages to the past, leading to unforeseen consequences.",
+                "imdbRating": 9.1,
+                "rottenTomatoesScore": 94,
+                "releaseYear": 2011,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/G6P8D8QJ6/steinsgate"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/uMYhjVwp0Fk"
+            },
+            {
+                "id": 40,
+                "title": "Strong Girl Bong-soon",
+                "type": "K-Drama",
+                "genres": [
+                    "Romance",
+                    "Comedy",
+                    "Fantasy"
+                ],
+                "moods": [
+                    "Funny",
+                    "Romantic",
+                    "Exciting"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A young woman with superhuman strength gets entangled in a series of bizarre events and a love triangle.",
+                "imdbRating": 8.2,
+                "rottenTomatoesScore": 90,
+                "releaseYear": 2017,
+                "whereToWatch": [
+                    {
+                        "platform": "Viki",
+                        "link": "https://www.viki.com/tv/33005c-strong-woman-do-bong-soon"
+                    },
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80178301"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/XLAlRGc7b8E"
+            },
+            {
+                "id": 41,
+                "title": "The Farewell",
+                "type": "Movie",
+                "genres": [
+                    "Drama",
+                    "Comedy"
+                ],
+                "moods": [
+                    "Dramatic",
+                    "Funny",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Short",
+                "runtime": "1h 40m",
+                "description": "A Chinese family discovers their grandmother has lung cancer and decide to keep her in the dark, scheduling a fake wedding to gather before she dies.",
+                "imdbRating": 7.6,
+                "rottenTomatoesScore": 98,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/movie/the-farewell-072a2e4b-6101-4416-89b1-5b7c010d3e5e"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/RofpAjqwMa8"
+            },
+            {
+                "id": 42,
+                "title": "The Witcher",
+                "type": "TV Show",
+                "genres": [
+                    "Fantasy",
+                    "Action",
+                    "Adventure"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Adventurous",
+                    "Dramatic"
+                ],
+                "durationCategory": "Long",
+                "seasons": 3,
+                "description": "Geralt of Rivia, a mutated monster-hunter for hire, journeys toward his destiny in a turbulent world.",
+                "imdbRating": 8.2,
+                "rottenTomatoesScore": 81,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80189685"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/ndl1W4ltcmg"
+            },
+            {
+                "id": 43,
+                "title": "Vinland Saga",
+                "type": "Anime",
+                "genres": [
+                    "Action",
+                    "Adventure",
+                    "Historical"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Dramatic",
+                    "Gritty"
+                ],
+                "durationCategory": "Long",
+                "seasons": 2,
+                "description": "A young Viking warrior seeks revenge for his father's death in 11th-century Europe.",
+                "imdbRating": 8.8,
+                "rottenTomatoesScore": 97,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/GRWVDG07R/vinland-saga"
+                    },
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81286314"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/f8JrZ7Q_p-8"
+            },
+            {
+                "id": 44,
+                "title": "Mr. Sunshine",
+                "type": "K-Drama",
+                "genres": [
+                    "Historical",
+                    "Romance",
+                    "Drama"
+                ],
+                "moods": [
+                    "Dramatic",
+                    "Romantic",
+                    "Inspiring"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A Korean-born American Marine Corps officer returns to Joseon and falls in love with an aristocrat's daughter.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 91,
+                "releaseYear": 2018,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80227183"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/rPJSo4fhtRU"
+            },
+            {
+                "id": 45,
+                "title": "The Good Doctor",
+                "type": "TV Show",
+                "genres": [
+                    "Drama",
+                    "Medical"
+                ],
+                "moods": [
+                    "Dramatic",
+                    "Inspiring"
+                ],
+                "durationCategory": "Long",
+                "seasons": 7,
+                "description": "A young autistic surgeon with savant syndrome relocates from a quiet country life to join a prestigious hospital's surgical unit.",
+                "imdbRating": 8.1,
+                "rottenTomatoesScore": 63,
+                "releaseYear": 2017,
+                "whereToWatch": [
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/series/the-good-doctor-f254b1f6-d74c-4740-9a3b-c2e8c2a9e3e7"
+                    },
+                    {
+                        "platform": "PrimeVideo",
+                        "link": "https://www.amazon.com/Good-Doctor-Season-1/dp/B07538J42X"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/lnY9FWUTY84"
+            },
+            {
+                "id": 46,
+                "title": "Itaewon Class",
+                "type": "K-Drama",
+                "genres": [
+                    "Drama",
+                    "Business",
+                    "Romance"
+                ],
+                "moods": [
+                    "Inspiring",
+                    "Dramatic"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "An ex-convict and his friends fight to achieve their dreams in a competitive food industry.",
+                "imdbRating": 8.2,
+                "rottenTomatoesScore": 88,
+                "releaseYear": 2020,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81193309"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/NeaHNQJ1kCo"
+            },
+            {
+                "id": 47,
+                "title": "What's Wrong with Secretary Kim",
+                "type": "K-Drama",
+                "genres": [
+                    "Romance",
+                    "Comedy",
+                    "Business"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Funny",
+                    "Relaxing"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A narcissistic vice president realizes his feelings for his secretary when she announces her resignation.",
+                "imdbRating": 8.1,
+                "rottenTomatoesScore": 90,
+                "releaseYear": 2018,
+                "whereToWatch": [
+                    {
+                        "platform": "Viki",
+                        "link": "https://www.viki.com/tv/35882c-whats-wrong-with-secretary-kim"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/EDGfWN36q5o"
+            },
+            {
+                "id": 48,
+                "title": "Signal",
+                "type": "K-Drama",
+                "genres": [
+                    "Crime",
+                    "Fantasy",
+                    "Thriller"
+                ],
+                "moods": [
+                    "Suspenseful",
+                    "Mysterious",
+                    "Dramatic"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A cold case profiler and a detective from the past communicate through a mysterious walkie-talkie to solve crimes.",
+                "imdbRating": 8.5,
+                "rottenTomatoesScore": 92,
+                "releaseYear": 2016,
+                "whereToWatch": [
+                    {
+                        "platform": "Viki",
+                        "link": "https://www.viki.com/tv/28350c-signal"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/RsdJLm7Swkw"
+            },
+            {
+                "id": 49,
+                "title": "Hospital Playlist 2",
+                "type": "K-Drama",
+                "genres": [
+                    "Drama",
+                    "Medical",
+                    "Comedy"
+                ],
+                "moods": [
+                    "Relaxing",
+                    "Funny",
+                    "Dramatic"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "The second season continues the story of five doctors and their daily lives, friendships, and challenges.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 93,
+                "releaseYear": 2021,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81404177"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/3OdPCNPSTmA"
+            },
+            {
+                "id": 50,
+                "title": "One Punch Man",
+                "type": "Anime",
+                "genres": [
+                    "Action",
+                    "Comedy",
+                    "Sci-Fi"
+                ],
+                "moods": [
+                    "Funny",
+                    "Exciting"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 2,
+                "description": "A superhero who can defeat any enemy with a single punch faces the existential crisis of being too strong.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 100,
+                "releaseYear": 2015,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/G6P8D8QJ6/one-punch-man"
+                    },
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/series/one-punch-man-94576394334a"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/Poo5lqoWSGw"
+            },
+            {
+                "id": 51,
+                "title": "The Shawshank Redemption",
+                "type": "Movie",
+                "genres": [
+                    "Drama"
+                ],
+                "moods": [
+                    "Inspiring",
+                    "Dramatic",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 22m",
+                "description": "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
+                "imdbRating": 9.3,
+                "rottenTomatoesScore": 91,
+                "releaseYear": 1994,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/movies/the-shawshank-redemption/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/NmzuHjWmXOc"
+            },
+            {
+                "id": 52,
+                "title": "Forrest Gump",
+                "type": "Movie",
+                "genres": [
+                    "Drama",
+                    "Romance"
+                ],
+                "moods": [
+                    "Inspiring",
+                    "Funny",
+                    "Dramatic"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 22m",
+                "description": "The presidencies of Kennedy and Johnson, the Vietnam War, the Watergate scandal and other historical events unfold from the perspective of an Alabama man with an IQ of 75.",
+                "imdbRating": 8.8,
+                "rottenTomatoesScore": 71,
+                "releaseYear": 1994,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/60000742"
+                    },
+                    {
+                        "platform": "PrimeVideo",
+                        "link": "https://www.amazon.com/Forrest-Gump-Tom-Hanks/dp/B001GBJ49S"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/bLvqoHBptjg"
+            },
+            {
+                "id": 53,
+                "title": "The Matrix",
+                "type": "Movie",
+                "genres": [
+                    "Sci-Fi",
+                    "Action"
+                ],
+                "moods": [
+                    "Thought-Provoking",
+                    "Exciting"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 16m",
+                "description": "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 88,
+                "releaseYear": 1999,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/movies/the-matrix/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/vKQi3bBA1y8"
+            },
+            {
+                "id": 54,
+                "title": "Pulp Fiction",
+                "type": "Movie",
+                "genres": [
+                    "Crime",
+                    "Drama"
+                ],
+                "moods": [
+                    "Gritty",
+                    "Funny",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 34m",
+                "description": "The lives of two mob hitmen, a boxer, a gangster's wife, and a pair of diner bandits intertwine in four tales of violence and redemption.",
+                "imdbRating": 8.9,
+                "rottenTomatoesScore": 92,
+                "releaseYear": 1994,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/movies/pulp-fiction/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/s75f3a00000"
+            },
+            {
+                "id": 55,
+                "title": "The Lord of the Rings: The Fellowship of the Ring",
+                "type": "Movie",
+                "genres": [
+                    "Fantasy",
+                    "Adventure",
+                    "Drama"
+                ],
+                "moods": [
+                    "Adventurous",
+                    "Dramatic",
+                    "Inspiring"
+                ],
+                "durationCategory": "Long",
+                "runtime": "2h 58m",
+                "description": "A young hobbit, Frodo Baggins, inherits a magical ring that is the key to the Dark Lord Sauron's plan to conquer Middle-earth.",
+                "imdbRating": 8.8,
+                "rottenTomatoesScore": 91,
+                "releaseYear": 2001,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/movies/the-lord-of-the-rings-the-fellowship-of-the-ring/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/V75dMMIW2B4"
+            },
+            {
+                "id": 56,
+                "title": "Gladiator",
+                "type": "Movie",
+                "genres": [
+                    "Action",
+                    "Drama",
+                    "Historical"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Dramatic",
+                    "Gritty"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 35m",
+                "description": "A Roman general is betrayed and his family murdered by an emperor's ambitious son. Reduced to slavery, he rises through the ranks of the gladiatorial arena to seek revenge.",
+                "imdbRating": 8.5,
+                "rottenTomatoesScore": 77,
+                "releaseYear": 2000,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/60000742"
+                    },
+                    {
+                        "platform": "PrimeVideo",
+                        "link": "https://www.amazon.com/Gladiator-Russell-Crowe/dp/B001GBJ49S"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/owfX6lS5_mY"
+            },
+            {
+                "id": 57,
+                "title": "The Dark Knight",
+                "type": "Movie",
+                "genres": [
+                    "Action",
+                    "Crime",
+                    "Drama"
+                ],
+                "moods": [
+                    "Suspenseful",
+                    "Gritty",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 32m",
+                "description": "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.",
+                "imdbRating": 9.0,
+                "rottenTomatoesScore": 94,
+                "releaseYear": 2008,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/movies/the-dark-knight/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/EXe4Q4M0000"
+            },
+            {
+                "id": 58,
+                "title": "Joker",
+                "type": "Movie",
+                "genres": [
+                    "Crime",
+                    "Drama",
+                    "Thriller"
+                ],
+                "moods": [
+                    "Gritty",
+                    "Thought-Provoking",
+                    "Dramatic"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 2m",
+                "description": "A mentally troubled comedian embarks on a downward spiral that leads him to the rise of a legendary psychopathic criminal.",
+                "imdbRating": 8.4,
+                "rottenTomatoesScore": 69,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/movies/joker/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/z0z0z0z0z0z0z0z0z0z0z0"
+            },
+            {
+                "id": 59,
+                "title": "La La Land",
+                "type": "Movie",
+                "genres": [
+                    "Musical",
+                    "Drama",
+                    "Romance"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Inspiring",
+                    "Dramatic"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 8m",
+                "description": "While navigating their careers in Los Angeles, a pianist and an actress fall in love while attempting to reconcile their aspirations for the future.",
+                "imdbRating": 7.9,
+                "rottenTomatoesScore": 91,
+                "releaseYear": 2016,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80117471"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/0z0z0z0z0z0z0z0z0z0z0z0"
+            },
+            {
+                "id": 60,
+                "title": "CODA",
+                "type": "Movie",
+                "genres": [
+                    "Drama",
+                    "Music"
+                ],
+                "moods": [
+                    "Inspiring",
+                    "Dramatic",
+                    "Uplifting"
+                ],
+                "durationCategory": "Short",
+                "runtime": "1h 51m",
+                "description": "As a CODA (Child of Deaf Adults), Ruby is the only hearing member of her family. When her family's fishing business is threatened, Ruby finds herself torn between pursuing her passion at Berklee College of Music and her family's dependence on her.",
+                "imdbRating": 8.0,
+                "rottenTomatoesScore": 94,
+                "releaseYear": 2021,
+                "whereToWatch": [
+                    {
+                        "platform": "Apple TV+",
+                        "link": "https://tv.apple.com/us/movie/coda/umc.cmc.30000000000000000000000"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/0pmfrE1YL4I"
+            },
+            {
+                "id": 61,
+                "title": "Everything Everywhere All at Once",
+                "type": "Movie",
+                "genres": [
+                    "Action",
+                    "Comedy",
+                    "Sci-Fi"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Funny",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 19m",
+                "description": "An aging Chinese immigrant is swept up in an insane adventure, where she alone can save the world by exploring other universes connecting with the lives she could have led.",
+                "imdbRating": 8.0,
+                "rottenTomatoesScore": 95,
+                "releaseYear": 2022,
+                "whereToWatch": [
+                    {
+                        "platform": "Showtime",
+                        "link": "https://www.showtime.com/#/movie/3500000"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/wxN1T1uxQ2g"
+            },
+            {
+                "id": 62,
+                "title": "Oppenheimer",
+                "type": "Movie",
+                "genres": [
+                    "Biography",
+                    "Drama",
+                    "Historical"
+                ],
+                "moods": [
+                    "Thought-Provoking",
+                    "Dramatic",
+                    "Intense"
+                ],
+                "durationCategory": "Short",
+                "runtime": "3h 0m",
+                "description": "The story of J. Robert Oppenheimer's role in the development of the atomic bomb during World War II.",
+                "imdbRating": 8.6,
+                "rottenTomatoesScore": 93,
+                "releaseYear": 2023,
+                "whereToWatch": [
+                    {
+                        "platform": "Peacock",
+                        "link": "https://www.peacocktv.com/movies/oppenheimer"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/uYPbbksJxIg"
+            },
+            {
+                "id": 63,
+                "title": "Barbie",
+                "type": "Movie",
+                "genres": [
+                    "Comedy",
+                    "Fantasy",
+                    "Adventure"
+                ],
+                "moods": [
+                    "Funny",
+                    "Whimsical",
+                    "Uplifting"
+                ],
+                "durationCategory": "Short",
+                "runtime": "1h 54m",
+                "description": "Barbie and Ken are having the time of their lives in the colorful and seemingly perfect world of Barbie Land. However, when they get a chance to go to the real world, they soon discover the joys and perils of living among humans.",
+                "imdbRating": 7.0,
+                "rottenTomatoesScore": 88,
+                "releaseYear": 2023,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/movies/barbie/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/pBk4NYhWNMM"
+            },
+            {
+                "id": 64,
+                "title": "Top Gun: Maverick",
+                "type": "Movie",
+                "genres": [
+                    "Action",
+                    "Drama"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Inspiring"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 10m",
+                "description": "After more than thirty years of service as one of the Navy’s top aviators, Pete 'Maverick' Mitchell is where he belongs, pushing the envelope as a courageous test pilot and dodging the advancement in rank that would ground him.",
+                "imdbRating": 8.3,
+                "rottenTomatoesScore": 96,
+                "releaseYear": 2022,
+                "whereToWatch": [
+                    {
+                        "platform": "Paramount+",
+                        "link": "https://www.paramountplus.com/movies/top-gun-maverick/10000000000000000000000000000000"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/giXco2jaZ_4"
+            },
+            {
+                "id": 65,
+                "title": "Knives Out",
+                "type": "Movie",
+                "genres": [
+                    "Mystery",
+                    "Comedy",
+                    "Crime"
+                ],
+                "moods": [
+                    "Mysterious",
+                    "Funny",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Short",
+                "runtime": "2h 10m",
+                "description": "A detective investigates the death of a patriarch of an eccentric, combative family.",
+                "imdbRating": 7.9,
+                "rottenTomatoesScore": 97,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81096739"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/qGqiHJTsRkQ"
+            },
+            {
+                "id": 66,
+                "title": "Friends",
+                "type": "TV Show",
+                "genres": [
+                    "Comedy",
+                    "Romance"
+                ],
+                "moods": [
+                    "Funny",
+                    "Relaxing",
+                    "Uplifting"
+                ],
+                "durationCategory": "Long",
+                "seasons": 10,
+                "description": "Follows the personal and professional lives of six twenty-somethings living in Manhattan.",
+                "imdbRating": 8.9,
+                "rottenTomatoesScore": 79,
+                "releaseYear": 1994,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/series/friends/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/8wThS5WCzs4"
+            },
+            {
+                "id": 67,
+                "title": "Game of Thrones",
+                "type": "TV Show",
+                "genres": [
+                    "Fantasy",
+                    "Drama",
+                    "Action"
+                ],
+                "moods": [
+                    "Dramatic",
+                    "Exciting",
+                    "Gritty"
+                ],
+                "durationCategory": "Long",
+                "seasons": 8,
+                "description": "Nine noble families fight for control over the mythical lands of Westeros, while an ancient enemy returns after being dormant for thousands of years.",
+                "imdbRating": 9.2,
+                "rottenTomatoesScore": 89,
+                "releaseYear": 2011,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/series/game-of-thrones/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/KPLWWIOCOOQ"
+            },
+            {
+                "id": 68,
+                "title": "The Crown",
+                "type": "TV Show",
+                "genres": [
+                    "Historical",
+                    "Drama"
+                ],
+                "moods": [
+                    "Dramatic",
+                    "Thought-Provoking",
+                    "Relaxing"
+                ],
+                "durationCategory": "Long",
+                "seasons": 6,
+                "description": "Follows the political rivalries and romance of Queen Elizabeth II's reign and the events that shaped the second half of the 20th century.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 86,
+                "releaseYear": 2016,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80025678"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/JWtnJjn6ng0"
+            },
+            {
+                "id": 69,
+                "title": "Succession",
+                "type": "TV Show",
+                "genres": [
+                    "Drama",
+                    "Comedy"
+                ],
+                "moods": [
+                    "Dramatic",
+                    "Gritty",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Long",
+                "seasons": 4,
+                "description": "The Roy family, owners of a global media and entertainment conglomerate, are fighting for control of the company amid uncertainty about the health of the family's patriarch, Logan Roy.",
+                "imdbRating": 8.8,
+                "rottenTomatoesScore": 95,
+                "releaseYear": 2018,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/series/succession/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/OzYxJV_rmE8"
+            },
+            {
+                "id": 70,
+                "title": "Ted Lasso",
+                "type": "TV Show",
+                "genres": [
+                    "Comedy",
+                    "Sport"
+                ],
+                "moods": [
+                    "Funny",
+                    "Inspiring",
+                    "Uplifting"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 3,
+                "description": "American college football coach Ted Lasso is unexpectedly recruited to coach a professional soccer team in England, despite having no experience coaching soccer.",
+                "imdbRating": 8.8,
+                "rottenTomatoesScore": 92,
+                "releaseYear": 2020,
+                "whereToWatch": [
+                    {
+                        "platform": "Apple TV+",
+                        "link": "https://tv.apple.com/us/show/ted-lasso/umc.cmc.30000000000000000000000"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/3u7EIiohs6U"
+            },
+            {
+                "id": 71,
+                "title": "Wednesday",
+                "type": "TV Show",
+                "genres": [
+                    "Fantasy",
+                    "Mystery",
+                    "Comedy"
+                ],
+                "moods": [
+                    "Mysterious",
+                    "Funny",
+                    "Suspenseful"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 1,
+                "description": "Wednesday Addams's years as a student at Nevermore Academy, where she attempts to master her emerging psychic ability, thwart a monstrous killing spree, and solve the supernatural mystery that embroiled her parents 25 years ago.",
+                "imdbRating": 8.1,
+                "rottenTomatoesScore": 72,
+                "releaseYear": 2022,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81231974"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/uQx8jKiIDTI"
+            },
+            {
+                "id": 72,
+                "title": "The Bear",
+                "type": "TV Show",
+                "genres": [
+                    "Comedy",
+                    "Drama"
+                ],
+                "moods": [
+                    "Intense",
+                    "Dramatic",
+                    "Funny"
+                ],
+                "durationCategory": "Short",
+                "seasons": 3,
+                "description": "A young chef from the fine dining world comes home to Chicago to run his family's Italian beef sandwich shop after the suicide of his older brother.",
+                "imdbRating": 8.6,
+                "rottenTomatoesScore": 99,
+                "releaseYear": 2022,
+                "whereToWatch": [
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/series/the-bear-f254b1f6-d74c-4740-9a3b-c2e8c2a9e3e7"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/gBmkI4jlaIo"
+            },
+            {
+                "id": 73,
+                "title": "One Piece",
+                "type": "Anime",
+                "genres": [
+                    "Action",
+                    "Adventure",
+                    "Fantasy"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Adventurous",
+                    "Funny"
+                ],
+                "durationCategory": "Long",
+                "seasons": 20,
+                "description": "Monkey D. Luffy and his pirate crew sail the Grand Line in search of the ultimate treasure, the One Piece, to become the next Pirate King.",
+                "imdbRating": 8.8,
+                "rottenTomatoesScore": 95,
+                "releaseYear": 1999,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/GRWVDG07R/one-piece"
+                    },
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80100172"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/Ades3pQbeh8"
+            },
+            {
+                "id": 74,
+                "title": "Naruto",
+                "type": "Anime",
+                "genres": [
+                    "Action",
+                    "Adventure",
+                    "Fantasy"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Inspiring",
+                    "Funny"
+                ],
+                "durationCategory": "Long",
+                "seasons": 9,
+                "description": "A young ninja, shunned by his village, dreams of becoming the Hokage, the leader of his village.",
+                "imdbRating": 8.3,
+                "rottenTomatoesScore": 90,
+                "releaseYear": 2002,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/GRWVDG07R/naruto"
+                    },
+                    {
+                        "platform": "Hulu",
+                        "link": "https://www.hulu.com/series/naruto-e3b8764a-2115-46f7-b2f5-300e21a221f5"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/yeUpnIKt6k4"
+            },
+            {
+                "id": 75,
+                "title": "Dragon Ball Z",
+                "type": "Anime",
+                "genres": [
+                    "Action",
+                    "Adventure",
+                    "Sci-Fi"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Adventurous"
+                ],
+                "durationCategory": "Long",
+                "seasons": 9,
+                "description": "The adventures of Goku and his companions as they defend the Earth against an assortment of villains ranging from intergalactic space fighters and conquerors, to androids and magical creatures.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 80,
+                "releaseYear": 1989,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/GRWVDG07R/dragon-ball-z"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/k1hp5Feb1VM"
+            },
+            {
+                "id": 76,
+                "title": "My Neighbor Totoro",
+                "type": "Anime",
+                "genres": [
+                    "Fantasy",
+                    "Family",
+                    "Adventure"
+                ],
+                "moods": [
+                    "Whimsical",
+                    "Calming",
+                    "Relaxing"
+                ],
+                "durationCategory": "Short",
+                "runtime": "1h 26m",
+                "description": "Two young girls move to the country with their father and discover a magical forest inhabited by wondrous creatures called Totoros.",
+                "imdbRating": 8.2,
+                "rottenTomatoesScore": 93,
+                "releaseYear": 1988,
+                "whereToWatch": [
+                    {
+                        "platform": "Max",
+                        "link": "https://www.max.com/movies/my-neighbor-totoro/b34a6218-1925-4122-835b-1c5c6b9d6205"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/92a7Hj0ijLs"
+            },
+            {
+                "id": 77,
+                "title": "Weathering With You",
+                "type": "Anime",
+                "genres": [
+                    "Romance",
+                    "Fantasy",
+                    "Drama"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Dramatic",
+                    "Thought-Provoking"
+                ],
+                "durationCategory": "Short",
+                "runtime": "1h 52m",
+                "description": "A high school boy who has run away to Tokyo befriends a girl who can manipulate the weather.",
+                "imdbRating": 7.5,
+                "rottenTomatoesScore": 92,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81200000"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/Q6iK6DjV_iE"
+            },
+            {
+                "id": 78,
+                "title": "Hometown Cha-Cha-Cha",
+                "type": "K-Drama",
+                "genres": [
+                    "Romance",
+                    "Comedy",
+                    "Slice of Life"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Funny",
+                    "Relaxing"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A big-city dentist opens a practice in a seaside village where she meets a charming jack-of-all-trades.",
+                "imdbRating": 8.4,
+                "rottenTomatoesScore": 90,
+                "releaseYear": 2021,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81404177"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/z66fazyp3-M"
+            },
+            {
+                "id": 79,
+                "title": "Business Proposal",
+                "type": "K-Drama",
+                "genres": [
+                    "Romance",
+                    "Comedy"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Funny",
+                    "Uplifting"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 1,
+                "description": "In disguise as her friend, Ha-ri shows up to a blind date to scare him away. But her plan backfires when he turns out to be her CEO — and makes a proposal.",
+                "imdbRating": 8.1,
+                "rottenTomatoesScore": 90,
+                "releaseYear": 2022,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81509440"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/M-PHcxPyasA"
+            },
+            {
+                "id": 80,
+                "title": "Extraordinary Attorney Woo",
+                "type": "K-Drama",
+                "genres": [
+                    "Drama",
+                    "Legal",
+                    "Comedy"
+                ],
+                "moods": [
+                    "Inspiring",
+                    "Thought-Provoking",
+                    "Uplifting"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A brilliant young lawyer with autism spectrum disorder tackles challenges in the courtroom and beyond.",
+                "imdbRating": 8.7,
+                "rottenTomatoesScore": 97,
+                "releaseYear": 2022,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81615421"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/MxeXECe2t-c"
+            },
+            {
+                "id": 81,
+                "title": "The Silent Sea",
+                "type": "K-Drama",
+                "genres": [
+                    "Sci-Fi",
+                    "Thriller",
+                    "Mystery"
+                ],
+                "moods": [
+                    "Suspenseful",
+                    "Mysterious",
+                    "Gritty"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 1,
+                "description": "During a perilous 24-hour mission on the moon, space explorers try to retrieve samples from an abandoned research facility steeped in classified secrets.",
+                "imdbRating": 6.9,
+                "rottenTomatoesScore": 78,
+                "releaseYear": 2021,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81193309"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/Af_Hj0MDBBQ"
+            },
+            {
+                "id": 82,
+                "title": "All of Us Are Dead",
+                "type": "K-Drama",
+                "genres": [
+                    "Horror",
+                    "Action",
+                    "Drama"
+                ],
+                "moods": [
+                    "Intense",
+                    "Suspenseful",
+                    "Gritty"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A high school becomes the epicenter of a zombie virus outbreak. Trapped students must fight their way out or turn into one of the infected.",
+                "imdbRating": 7.5,
+                "rottenTomatoesScore": 87,
+                "releaseYear": 2022,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81239899"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/IN5TD4VRcSM"
+            },
+            {
+                "id": 83,
+                "title": "Sweet Home",
+                "type": "K-Drama",
+                "genres": [
+                    "Horror",
+                    "Action",
+                    "Fantasy"
+                ],
+                "moods": [
+                    "Suspenseful",
+                    "Gritty",
+                    "Exciting"
+                ],
+                "durationCategory": "Long",
+                "seasons": 2,
+                "description": "Cha Hyun-su, a high school student, moves into a new apartment. Soon, monsters start appearing, and residents are trapped inside the building.",
+                "imdbRating": 7.3,
+                "rottenTomatoesScore": 80,
+                "releaseYear": 2020,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81061734"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/7rI56NmD33Y"
+            },
+            {
+                "id": 84,
+                "title": "Vagabond",
+                "type": "K-Drama",
+                "genres": [
+                    "Action",
+                    "Thriller",
+                    "Mystery"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Suspenseful",
+                    "Gritty"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A stuntman who barely survives a mysterious plane crash embarks on an investigation that leads him to a vast corruption scandal.",
+                "imdbRating": 7.9,
+                "rottenTomatoesScore": 85,
+                "releaseYear": 2019,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80211855"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/PndjeodkGj8"
+            },
+            {
+                "id": 85,
+                "title": "I Can Hear Your Voice",
+                "type": "K-Drama",
+                "genres": [
+                    "Romance",
+                    "Fantasy",
+                    "Legal"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Thought-Provoking",
+                    "Dramatic"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 1,
+                "description": "A lawyer with a cynical view of the world and a high school student who can read people's minds team up to solve cases.",
+                "imdbRating": 8.3,
+                "rottenTomatoesScore": 90,
+                "releaseYear": 2013,
+                "whereToWatch": [
+                    {
+                        "platform": "Viki",
+                        "link": "https://www.viki.com/tv/28308c-i-can-hear-your-voice"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/kNcTz4OhoXg"
+            },
+            {
+                "id": 86,
+                "title": "The Uncanny Counter",
+                "type": "K-Drama",
+                "genres": [
+                    "Fantasy",
+                    "Action",
+                    "Mystery"
+                ],
+                "moods": [
+                    "Exciting",
+                    "Funny",
+                    "Gritty"
+                ],
+                "durationCategory": "Long",
+                "seasons": 2,
+                "description": "Demon hunters disguised as noodle shop employees hunt down evil spirits.",
+                "imdbRating": 8.1,
+                "rottenTomatoesScore": 88,
+                "releaseYear": 2020,
+                "whereToWatch": [
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/81327179"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/rI55SRM6uhs"
+            },
+            {
+                "id": 87,
+                "title": "Mr. Queen",
+                "type": "K-Drama",
+                "genres": [
+                    "Historical",
+                    "Comedy",
+                    "Fantasy"
+                ],
+                "moods": [
+                    "Funny",
+                    "Whimsical",
+                    "Romantic"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A modern-day chef finds his soul trapped in the body of a queen from the Joseon dynasty.",
+                "imdbRating": 8.6,
+                "rottenTomatoesScore": 92,
+                "releaseYear": 2020,
+                "whereToWatch": [
+                    {
+                        "platform": "Viki",
+                        "link": "https://www.viki.com/tv/37577c-mr-queen"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/2-Ikfk0hJbw"
+            },
+            {
+                "id": 88,
+                "title": "Weightlifting Fairy Kim Bok-joo",
+                "type": "K-Drama",
+                "genres": [
+                    "Romance",
+                    "Comedy",
+                    "Sport"
+                ],
+                "moods": [
+                    "Funny",
+                    "Romantic",
+                    "Uplifting"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A group of college athletes chase their dreams, experience love, and grow up along the way.",
+                "imdbRating": 8.5,
+                "rottenTomatoesScore": 91,
+                "releaseYear": 2016,
+                "whereToWatch": [
+                    {
+                        "platform": "Viki",
+                        "link": "https://www.viki.com/tv/33005c-weightlifting-fairy-kim-bok-joo"
+                    },
+                    {
+                        "platform": "Netflix",
+                        "link": "https://www.netflix.com/title/80178301"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/H1vplUsGDoI"
+            },
+            {
+                "id": 89,
+                "title": "My Roommate is a Gumiho",
+                "type": "K-Drama",
+                "genres": [
+                    "Romance",
+                    "Comedy",
+                    "Fantasy"
+                ],
+                "moods": [
+                    "Romantic",
+                    "Funny",
+                    "Relaxing"
+                ],
+                "durationCategory": "Long",
+                "seasons": 1,
+                "description": "A college student accidentally swallows a gumiho's bead, forcing them to live together to become human.",
+                "imdbRating": 8.6,
+                "rottenTomatoesScore": 90,
+                "releaseYear": 2021,
+                "whereToWatch": [
+                    {
+                        "platform": "Viki",
+                        "link": "https://www.viki.com/tv/37748c-my-roommate-is-a-gumiho"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/chOjexZ3CRc"
+            },
+            {
+                "id": 90,
+                "title": "The Detective is Already Dead",
+                "type": "Anime",
+                "genres": [
+                    "Mystery",
+                    "Action",
+                    "Drama"
+                ],
+                "moods": [
+                    "Mysterious",
+                    "Dramatic"
+                ],
+                "durationCategory": "Medium",
+                "seasons": 1,
+                "description": "A former assistant to a legendary detective finds himself drawn back into the world of crime-solving after her death.",
+                "imdbRating": 7.2,
+                "rottenTomatoesScore": 75,
+                "releaseYear": 2021,
+                "whereToWatch": [
+                    {
+                        "platform": "Crunchyroll",
+                        "link": "https://www.crunchyroll.com/series/GY9PJ2K0Y/the-detec tive-is-already-dead"
+                    }
+                ],
+                "trailerLink": "https://www.youtube.com/embed/AECJB5xuNUo"
+            }
+        ];
+
+        const questionnaireSection = document.getElementById('questionnaire-section');
+        const recommendationSection = document.getElementById('recommendation-section');
+        const recommendationResultsDiv = document.getElementById('recommendation-results');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const noResultsMessage = document.getElementById('no-results-message');
+
+        const questionSteps = [
+            document.getElementById('question-step-1'),
+            document.getElementById('question-step-2'),
+            document.getElementById('question-step-3'),
+            document.getElementById('question-step-4')
+        ];
+
+        const nextStep1Btn = document.getElementById('next-step-1');
+        const prevStep2Btn = document.getElementById('prev-step-2');
+        const nextStep2Btn = document.getElementById('next-step-2');
+        const prevStep3Btn = document.getElementById('prev-step-3');
+        const nextStep3Btn = document.getElementById('next-step-3');
+        const prevStep4Btn = document.getElementById('prev-step-4');
+        const generateRecommendationsBtn = document.getElementById('generate-recommendations');
+        const clearFiltersBtn = document.getElementById('clear-filters');
+
+        const moodCheckboxes = document.querySelectorAll('#question-step-1 input[name="mood"]');
+        const typeCheckboxes = document.querySelectorAll('#question-step-2 input[name="type"]');
+        const genreCheckboxes = document.querySelectorAll('#question-step-3 input[name="genre"]');
+        const durationRadios = document.querySelectorAll('#question-step-4 input[name="duration"]');
+
+        const infoModalOverlay = document.getElementById('info-modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalCloseBtn = document.querySelector('.modal-close-btn');
+
+        let currentQuestionStep = 0;
+        let selectedMoods = new Set();
+        let selectedTypes = new Set();
+        let selectedGenres = new Set();
+        let selectedDuration = '';
+
+        const MIN_RECOMMENDATIONS = 6;
+
+        function updateSelections(event, targetSet) {
+            if (event.target.checked) {
+                targetSet.add(event.target.value);
+            } else {
+                targetSet.delete(event.target.value);
+            }
+        }
+
+        function updateDurationSelection(event) {
+            selectedDuration = event.target.value;
+        }
+
+        function renderQuestion(stepIndex) {
+            questionSteps.forEach((step, index) => {
+                if (index === stepIndex) {
+                    step.classList.remove('hidden');
+                } else {
+                    step.classList.add('hidden');
+                }
+            });
+            currentQuestionStep = stepIndex;
+            recommendationSection.classList.add('hidden');
+            noResultsMessage.classList.remove('active');
+        }
+
+        function filterRecommendations() {
+            let results = [];
+            let seenIds = new Set();
+
+            const matchesAny = (itemTags, selectedTags) => {
+                if (selectedTags.size === 0) return true;
+                return Array.from(selectedTags).some(tag => itemTags.includes(tag));
+            };
+
+            const primaryMatches = entertainmentData.filter(item => {
+                const typeMatch = selectedTypes.size === 0 || selectedTypes.has(item.type);
+                const durationMatch = selectedDuration === '' || item.durationCategory === selectedDuration;
+
+                const moodOrGenreMatch = (selectedMoods.size === 0 && selectedGenres.size === 0) ||
+                                         matchesAny(item.moods, selectedMoods) ||
+                                         matchesAny(item.genres, selectedGenres);
+
+                return typeMatch && durationMatch && moodOrGenreMatch;
+            });
+
+            primaryMatches.forEach(item => {
+                if (!seenIds.has(item.id)) {
+                    results.push(item);
+                    seenIds.add(item.id);
+                }
+            });
+
+            if (results.length < MIN_RECOMMENDATIONS) {
+                const typeDurationMatches = entertainmentData.filter(item => {
+                    if (seenIds.has(item.id)) return false;
+
+                    const typeMatch = selectedTypes.size === 0 || selectedTypes.has(item.type);
+                    const durationMatch = selectedDuration === '' || item.durationCategory === selectedDuration;
+                    return typeMatch && durationMatch;
+                });
+
+                typeDurationMatches.forEach(item => {
+                    if (results.length < MIN_RECOMMENDATIONS && !seenIds.has(item.id)) {
+                        results.push(item);
+                        seenIds.add(item.id);
+                    }
+                });
+            }
+
+            if (results.length < MIN_RECOMMENDATIONS) {
+                const allOtherItems = entertainmentData.filter(item => !seenIds.has(item.id));
+                allOtherItems.sort(() => 0.5 - Math.random());
+                allOtherItems.forEach(item => {
+                    if (results.length < MIN_RECOMMENDATIONS && !seenIds.has(item.id)) {
+                        results.push(item);
+                        seenIds.add(item.id);
+                    }
+                });
+            }
+
+            return results.slice(0, 20);
+        }
+
+        function createRecommendationCard(item) {
+            const card = document.createElement('div');
+            card.classList.add('recommendation-card');
+
+            let durationDisplay = '';
+            if (item.type === "Movie") {
+                durationDisplay = item.runtime ? `Runtime: ${item.runtime}` : '';
+            } else if (item.seasons) {
+                durationDisplay = `Seasons: ${item.seasons}`;
+            }
+
+            let titleClass = '';
+            let placeholderTextColor = 'e6edf3';
+            switch(item.type) {
+                case 'Movie':
+                    titleClass = 'movie-title';
+                    placeholderTextColor = '63b3ed';
+                    break;
+                case 'TV Show':
+                    titleClass = 'tv-show-title';
+                    placeholderTextColor = 'a78bfa';
+                    break;
+                case 'Anime':
+                    titleClass = 'anime-title';
+                    placeholderTextColor = 'f6e05e';
+                    break;
+                case 'K-Drama':
+                    titleClass = 'kdrama-title';
+                    placeholderTextColor = 'fc8181';
+                    break;
+                default:
+                    titleClass = '';
+                    placeholderTextColor = 'e6edf3';
+            }
+
+            const placeholderText = item.title.toUpperCase();
+            const placeholderImageUrl = `https://placehold.co/400x600/1a202c/${placeholderTextColor}?text=${encodeURIComponent(placeholderText)}`;
+
+            card.innerHTML = `
+                <img src="${placeholderImageUrl}" alt="${item.title} Poster" class="rounded-t-xl">
+                <div class="card-content">
+                    <h3 class="${titleClass}">${item.title}</h3>
+                    <p class="type-genre text-gray-400">${item.type} | ${item.genres.join(', ')}</p>
+                    <div class="rating-info">
+                        <span class="imdb">IMDb: ${item.imdbRating}</span>
+                        <span class="rt">RT: ${item.rottenTomatoesScore}%</span>
+                        <span class="release-year text-gray-400">${item.releaseYear}</span>
+                        ${durationDisplay ? `<span class="duration-info text-gray-400">${durationDisplay}</span>` : ''}
+                    </div>
+                    <p class="text-gray-300 text-sm mb-4">${item.description}</p>
+                    <div class="card-actions">
+                        <button class="watch-now-btn" data-id="${item.id}">Where to Watch</button>
+                        <button class="view-trailer-btn" data-id="${item.id}">View Trailer</button>
+                    </div>
+                </div>
+            `;
+
+            const watchBtn = card.querySelector('.watch-now-btn');
+            watchBtn.addEventListener('click', () => openWatchModal(item.id));
+
+            const trailerBtn = card.querySelector('.view-trailer-btn');
+            trailerBtn.addEventListener('click', () => openTrailerModal(item.id));
+
+            return card;
+        }
+
+        function renderRecommendations(recommendations) {
+            recommendationResultsDiv.innerHTML = '';
+            loadingIndicator.classList.remove('active');
+            noResultsMessage.classList.remove('active');
+
+            if (recommendations.length === 0) {
+                noResultsMessage.classList.add('active');
+            } else {
+                recommendations.forEach(item => {
+                    const card = createRecommendationCard(item);
+                    recommendationResultsDiv.appendChild(card);
+                });
+            }
+        }
+
+        function openWatchModal(itemId) {
+            const item = entertainmentData.find(d => d.id === itemId);
+            if (!item) return;
+
+            modalTitle.textContent = `Where to Watch "${item.title}"`;
+            let platformsHtml = '<div class="platform-list mt-4">';
+            if (item.whereToWatch && item.whereToWatch.length > 0) {
+                item.whereToWatch.forEach(platform => {
+                    platformsHtml += `
+                        <a href="${platform.link}" target="_blank" rel="noopener noreferrer">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.25A2.25 2.25 0 0 0 3 7.5v9.75a2.25 2.25 0 0 0 2.25 2.25h9.75a2.25 2.25 0 0 0 2.25-2.25V12a.75.75 0 0 1 1.5 0v5.25a3.75 3.75 0 0 1-3.75 3.75H5.25A3.75 3.75 0 0 1 1.5 17.25V7.5a3.75 3.75 0 0 1 3.75-3.75h5.25a.75.75 0 0 1 0 1.5H5.25Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.375 7.5H19.5a2.25 2.25 0 0 1 2.25 2.25v1.25a.75.75 0 0 1-1.5 0V9.75a.75.75 0 0 0-.75-.75H10.375a.75.75 0 0 1 0-1.5Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.375 7.5L14.25 3.625a.75.75 0 0 1 1.06 0l2.625 2.625a.75.75 0 0 1 0 1.06L19.5 11.25" />
+                            </svg>
+                            ${platform.platform}
+                        </a>
+                    `;
+                });
+            } else {
+                platformsHtml += '<p class="text-gray-400 text-center">No streaming platforms listed for this title.</p>';
+            }
+            platformsHtml += '</div>';
+            modalBody.innerHTML = platformsHtml;
+            infoModalOverlay.classList.add('active');
+        }
+
+        function openTrailerModal(itemId) {
+            const item = entertainmentData.find(d => d.id === itemId);
+            if (!item) return;
+
+            modalTitle.textContent = `Trailer for "${item.title}"`;
+            let trailerHtml = '';
+            if (item.trailerLink) {
+                trailerHtml = `
+                    <div class="aspect-w-16 aspect-h-9 w-full h-80 rounded-lg overflow-hidden">
+                        <iframe class="w-full h-full" src="${item.trailerLink}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                `;
+            } else {
+                trailerHtml = '<p class="text-gray-400 text-center">No trailer available for this title.</p>';
+            }
+            modalBody.innerHTML = trailerHtml;
+            infoModalOverlay.classList.add('active');
+        }
+
+        function closeModal() {
+            infoModalOverlay.classList.remove('active');
+            modalBody.innerHTML = '';
+            modalTitle.textContent = '';
+        }
+
+        function resetAllFilters() {
+            selectedMoods.clear();
+            selectedTypes.clear();
+            selectedGenres.clear();
+            selectedDuration = '';
+
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('input[type="radio"]').forEach(rb => rb.checked = false);
+
+            recommendationSection.classList.add('hidden');
+            questionnaireSection.classList.remove('hidden');
+
+            renderQuestion(0);
+        }
+
+        nextStep1Btn.addEventListener('click', () => renderQuestion(1));
+        prevStep2Btn.addEventListener('click', () => renderQuestion(0));
+        nextStep2Btn.addEventListener('click', () => renderQuestion(2));
+        prevStep3Btn.addEventListener('click', () => renderQuestion(1));
+        nextStep3Btn.addEventListener('click', () => renderQuestion(3));
+        prevStep4Btn.addEventListener('click', () => renderQuestion(2));
+
+        moodCheckboxes.forEach(cb => cb.addEventListener('change', (e) => updateSelections(e, selectedMoods)));
+        typeCheckboxes.forEach(cb => cb.addEventListener('change', (e) => updateSelections(e, selectedTypes)));
+        genreCheckboxes.forEach(cb => cb.addEventListener('change', (e) => updateSelections(e, selectedGenres)));
+        durationRadios.forEach(rb => rb.addEventListener('change', updateDurationSelection));
+
+        generateRecommendationsBtn.addEventListener('click', () => {
+            questionnaireSection.classList.add('hidden');
+            recommendationSection.classList.remove('hidden');
+            loadingIndicator.classList.add('active');
+
+            setTimeout(() => {
+                const filtered = filterRecommendations();
+                renderRecommendations(filtered);
+            }, 800);
+        });
+
+        clearFiltersBtn.addEventListener('click', resetAllFilters);
+
+        modalCloseBtn.addEventListener('click', closeModal);
+        infoModalOverlay.addEventListener('click', (e) => {
+            if (e.target === infoModalOverlay) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderQuestion(0);
+        });
+
+    </script>
+</body>
+</html>
