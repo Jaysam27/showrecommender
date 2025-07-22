@@ -1,0 +1,1 @@
+This website recommends you shows, based on what you are feeling, what type of genre you like and also how much time you have. It recommends movies, animes, k-drama's and also tv shows. It gives you the trailers and also tells you where to wathc. It tells you how long it is or how many seasons and all other things about the show.
